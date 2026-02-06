@@ -1,34 +1,29 @@
 import os
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from dotenv import load_dotenv
+
+# Load environment variables (optional, can be empty for SQLite)
 load_dotenv()
 
+# Use DATABASE_URL from environment if set; else fallback to SQLite (college-friendly)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./hrms_lite.db")
 
-# Use env var for deployment.
-# Format: mysql+pymysql://USER:PASSWORD@HOST:PORT/DATABASE_NAME
-#
-# IMPORTANT:
-# - In production (Render), always set DATABASE_URL.
-# - For local development, if DATABASE_URL is NOT set, we fall back to SQLite
-#   to avoid hardcoding MySQL credentials in code.
-# DATABASE_URL = os.getenv("DATABASE_URL")
-# if not DATABASE_URL:
-#     DATABASE_URL = "sqlite:///./hrms_lite.db"
-DATABASE_URL = "mysql+pymysql://root:Tanamay%4012345@localhost:3306/hrms_lite"
-
-
+# Create SQLAlchemy engine
 engine = create_engine(
     DATABASE_URL,
-    echo=False,          # quieter logs for production readiness
-    pool_pre_ping=True,  # better resilience for dropped connections
+    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
+    echo=False,          # quieter logs
+    pool_pre_ping=True,  # auto handle dropped connections
 )
 
+# Session class for DB access
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
+# Base class for models
 Base = declarative_base()
 
+# Dependency to get DB session
 def get_db():
     db = SessionLocal()
     try:
